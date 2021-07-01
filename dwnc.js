@@ -3,7 +3,7 @@ const $ = Env(jsname)
 
 
 //login
-if ($request && $request.indexOf('getWsUrl') > -1) {
+if ($request && $request.url.indexOf('getWsUrl') > -1) {
   $.log(`获取账号信息🎉: 成功\nurl: ${$request.url}`);
   $.msg($.name + $.idx, "获取账号信息成功🎉")
   $.done()
