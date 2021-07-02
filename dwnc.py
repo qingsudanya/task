@@ -15,7 +15,8 @@ class Dwnc:
     ENV = 'release'
     IGNORE_URLS = ['/login']
 
-    def __init__(self, openid, sessid, account=None):
+    def __init__(self, openid, sessid, account=None, ua=None):
+        self.ua = ua if ua else 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.7(0x1800072d) NetType/WIFI Language/zh_CN'
         self.account = account if account else openid
         self.openid = openid
         self.sessid = sessid
@@ -6426,7 +6427,7 @@ class Dwnc:
         headers = {
             'Host': 'minigame.ucpopo.com',
             'content-type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.7(0x1800072d) NetType/WIFI Language/zh_CN',
+            'User-Agent': self.ua,
             'Referer': 'https://servicewechat.com/wxdbbf991feed9e2ba/14/page-frame.html',
         }
 
@@ -6453,6 +6454,8 @@ class Dwnc:
     def login(self):
         res = self.get('/login')
         data = res.json()
+        if 'user' not in data.keys():
+            raise Exception('登录失效, 换设备打开小程序，原有登录信息会过期，请重新获取')
         self.random_wait(5, 10, message='没啥用的等待～假装在加载界面😂')
         land_list = data['user']['landList']
         self.land_list = land_list
@@ -7069,50 +7072,55 @@ if __name__ == '__main__':
     accounts = os.getenv('DWNC_AUTH')
     if not accounts:
         print('请设置环境变量DWNC_AUTH', flush=True)
+    ua = os.getenv('DWNC_UA')
+    version = os.getenv('DWNC_VERSION')
+    if ua:
+        print(f'DWNC_UA:{ua}', flush=True)
+    if version:
+        print(f'DWNC_VERSION:{version}', flush=True)
     accounts = [parse(account) for account in accounts.split('&')]
-    accounts = [Dwnc(**account) for account in accounts]
-
+    accounts = [Dwnc(**account, ua=ua) for account in accounts]
 
     print(f'总计{len(accounts)}个账号', flush=True)
     while True:
-        # try:
-        for dwnc in accounts:
-            print(f'---------------当前账号: {dwnc.account}------------------')
-            dwnc.login()
-            if last and not dwnc.is_help:
-                if last.openid != dwnc.openid:
-                    dwnc.help(last.openid)
-                    dwnc.is_help = True
-            dwnc.get_gold()
-            # dwnc.buy()
-            dwnc.on_buy()
-            dwnc.get_offline_award()
-            dwnc.check_catch_worker()
-            dwnc.check_cash()
-            dwnc.check_sign()
-            dwnc.check_open()
-            # dwnc.check_open_land()
-            dwnc.check_level()
-            dwnc.check_order()
-            dwnc.check_daily()
-            dwnc.check_task_main()
-            for _ in range(random.randint(1, 3)):
-                status = dwnc.check_worker()
-                if status:
-                    break
-            for _ in range(random.randint(2, 6)):
-                dwnc.check_helper_level()
-            for _ in range(random.randint(1, 3)):
-                dwnc.check_auction()
+        try:
+            for dwnc in accounts:
+                print(f'---------------当前账号: {dwnc.account}------------------')
+                dwnc.login()
+                if last and not dwnc.is_help:
+                    if last.openid != dwnc.openid:
+                        dwnc.help(last.openid)
+                        dwnc.is_help = True
+                dwnc.get_gold()
+                # dwnc.buy()
+                dwnc.on_buy()
+                dwnc.get_offline_award()
+                dwnc.check_catch_worker()
+                dwnc.check_cash()
+                dwnc.check_sign()
+                dwnc.check_open()
+                # dwnc.check_open_land()
+                dwnc.check_level()
+                dwnc.check_order()
+                dwnc.check_daily()
+                dwnc.check_task_main()
+                for _ in range(random.randint(1, 3)):
+                    status = dwnc.check_worker()
+                    if status:
+                        break
+                for _ in range(random.randint(2, 6)):
+                    dwnc.check_helper_level()
+                for _ in range(random.randint(1, 3)):
+                    dwnc.check_auction()
 
-            # dwnc.first = False
-            last = dwnc
-            dwnc._cache = {}
-            print('-------------------------------------------------\n\n\n\n')
+                # dwnc.first = False
+                last = dwnc
+                dwnc._cache = {}
+                print('-------------------------------------------------\n\n\n\n')
 
-        if datetime.datetime.now().hour >= 22:
-            break
-        # except Exception as e:
-        #     print(e)
+            if datetime.datetime.now().hour >= 22:
+                break
+        except Exception as e:
+            print(e, flush=True)
 
         Dwnc.random_wait(200, 900, message='休息一会儿～～～～')
